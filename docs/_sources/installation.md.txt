@@ -1,0 +1,12 @@
+# Installation Instructions
+
+## Prerequisites
+* A message broker supporting the AMQPv0-9-1 protocol (eg. RabbitMQ)
+* At least Python 3.6 on a platform supported by Python and `pip`
+
+## Installation
+
+To install this package you will need to execute the following command in your terminal:
+```shell
+python -m pip install --upgrade amqp-rpc-server
+```
