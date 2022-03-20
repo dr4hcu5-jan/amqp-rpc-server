@@ -96,14 +96,21 @@ class BasicConsumer:
             self._logger.info('The consumer is stopping and closing the connection to the message '
                               'broker')
             if self._is_consuming:
+                self._logger.debug('Stopping the consumer')
                 self._stop_consuming()
                 # Try to start the ioloop if necessary
                 try:
+                    self._logger.debug('Restarting the ioloop')
                     self._connection.ioloop.start()
-                except Exception:  # pylint: disable=broad-except
+                except Exception as error:  # pylint: disable=broad-except
+                    self._logger.debug('IOLoop restart not necessary')
                     pass
             else:
-                self._connection.ioloop.stop()
+                self._logger.debug('Currently not consuming')
+                try:
+                    self._connection.ioloop.stop()
+                except Exception:  # pylint: disable=broad-except
+                    pass
             self._logger.info('Stopped the consumer and closed the connection to the message '
                               'broker')
     
@@ -222,14 +229,17 @@ class BasicConsumer:
         if isinstance(reason, pika.exceptions.ChannelClosedByBroker):
             self._logger.critical('The message broker closed the currently active channel')
             self.may_reconnect = True
-            self.stop()
+            self._is_closing = True
+            self._close_connection()
         elif isinstance(reason, pika.exceptions.ChannelClosedByClient):
             self._logger.info('The server closed the connection to the message broker')
-            self.stop()
+            self._close_connection()
         else:
             self._logger.critical('The channel was closed for an not handled error: %s',
                                   reason)
-            self.stop()
+            self._is_closing = True
+            self.may_reconnect = True
+            self._close_connection()
     
     def _setup_exchange(self):
         """Set up the binding of the exchange and the possible creation of the exchange"""
@@ -330,6 +340,7 @@ class BasicConsumer:
         self._logger.info('Connection successfully established and configured')
         self._logger.info('Enabling the message consumption')
         self._channel.add_on_cancel_callback(self._cb_consumer_cancelled)
+        self._is_consuming = True
         self._consumer_tag = self._channel.basic_consume(
             self._queue_name,
             on_message_callback=self._cb_new_message_received,
@@ -436,3 +447,11 @@ class BasicConsumer:
             )
         )
         return
+
+    def _close_connection(self):
+        self._consuming = False
+        if self._connection.is_closing or self._connection.is_closed:
+            self._logger.info('Connection is closing or already closed')
+        else:
+            self._logger.info('Closing connection')
+            self._connection.close()

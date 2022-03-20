@@ -130,6 +130,7 @@ class Server:
         """Stop the server and disconnect the underlying :class:`~.basicConsumer.BasicConsumer`"""
         self._stop_event.set()
         self._consumer.stop()
+        self._consumer_tread.join()
         
     def _start_with_reconnecting_loop(self):
         """Start the AMQP Server with a reconnecting logic when the BasicConsumer disconnects"""
