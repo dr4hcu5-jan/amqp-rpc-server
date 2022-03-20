@@ -65,7 +65,7 @@ class Server:
         # = Validate the executor =
         if executor is None:
             raise ValueError('The executor is a required parameter and may not be None')
-        if not inspect.ismethod(executor):
+        if not inspect.isfunction(executor):
             raise TypeError('The executor is a required parameter and needs to be a method')
         # Create a signature object
         executor_signature = inspect.signature(executor)
@@ -82,7 +82,7 @@ class Server:
         # = Check the content_validator if it is set =
         if content_validator is not None:
             # Check if the validator is a method
-            if not inspect.ismethod(content_validator):
+            if not inspect.isfunction(content_validator):
                 raise TypeError('The content_validator needs to be a method')
             # Get the signature of the content validator
             validator_signature = inspect.signature(content_validator)

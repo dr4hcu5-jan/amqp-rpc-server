@@ -330,6 +330,12 @@ class BasicConsumer:
         self._logger.info('Connection successfully established and configured')
         self._logger.info('Enabling the message consumption')
         self._channel.add_on_cancel_callback(self._cb_consumer_cancelled)
+        self._consumer_tag = self._channel.basic_consume(
+            self._queue_name,
+            on_message_callback=self._cb_new_message_received,
+            exclusive=True,
+            auto_ack=False
+        )
     
     def _cb_consumer_cancelled(self, method_frame: pika.frame.Method):
         """
