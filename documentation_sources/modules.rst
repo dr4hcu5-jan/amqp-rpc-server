@@ -1,8 +1,7 @@
-Package and Module Documentation
-================================
+amqp_rpc_server
+===============
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 4
 
    amqp_rpc_server
-   amqp_rpc_server.basic_consumer
