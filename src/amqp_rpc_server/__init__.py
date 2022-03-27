@@ -1,9 +1,9 @@
+import inspect
 import logging
 import secrets
 import threading
 import time
 import typing
-import inspect
 
 import pika.exchange_type
 
@@ -28,7 +28,7 @@ class Server:
         """
         Initialize a new RPC server with an underlying :class:`~.basic_consumer.BasicConsumer`
         handling the receiving and sending of messages
-        
+
         :param amqp_dsn: The Data Source Name pointing to the message broker. The message broker
             needs to support AMQPv0-9-1.
         :type amqp_dsn: str
@@ -133,7 +133,10 @@ class Server:
             daemon=True
         )
         self._consumer_tread.start()
-        if self._error_risen.wait():
+    
+    def raise_exceptions(self):
+        """Raise a possible exception that was risen in a thread"""
+        if self._error is not None:
             raise self._error
     
     def stop_server(self):
