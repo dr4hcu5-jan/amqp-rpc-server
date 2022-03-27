@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../src/'))
 
 project = 'Advanced Message Queuing Protocol RPC Server'
 copyright = '2022, Jan Eike Suchard'
-release = '1.0.0'
+release = '1.1.0'
 author = 'Jan Eike Suchard'
 github_username = 'j-suchard'
 github_repository = 'amqp-rpc-server'
