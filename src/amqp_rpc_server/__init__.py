@@ -1,3 +1,4 @@
+import logging
 import secrets
 import threading
 import time
@@ -7,6 +8,9 @@ import inspect
 import pika.exchange_type
 
 from .basic_consumer import BasicConsumer as _BasicConsumer
+from .exceptions import MaxConnectionAttemptsReached as _MaxConnectionAttemptsReached
+
+_logger = logging.getLogger(__name__)
 
 
 class Server:
@@ -111,13 +115,17 @@ class Server:
         self._content_validator = content_validator
         self._queue_name = queue_name
         self._exchange_type = exchange_type
+        self._max_reconnection_attempts = max_reconnection_attempts
+        self._current_reconnection_attempts = 0
         # Create the underlying BasicConsumer
         self._consumer = _BasicConsumer(
             amqp_dsn, exchange_name, executor, content_validator, queue_name, exchange_type
         )
         self._consumer_tread: typing.Optional[threading.Thread] = None
         self._stop_event = threading.Event()
-
+        self._error_risen = threading.Event()
+        self._error: typing.Optional[Exception] = None
+    
     def start_server(self):
         """Start the AMQP RPC Server and the underlying basic consumer in another thread"""
         self._consumer_tread = threading.Thread(
@@ -125,13 +133,15 @@ class Server:
             daemon=True
         )
         self._consumer_tread.start()
-        
+        if self._error_risen.wait():
+            raise self._error
+    
     def stop_server(self):
         """Stop the server and disconnect the underlying :class:`~.basicConsumer.BasicConsumer`"""
         self._stop_event.set()
         self._consumer.stop()
         self._consumer_tread.join()
-        
+    
     def _start_with_reconnecting_loop(self):
         """Start the AMQP Server with a reconnecting logic when the BasicConsumer disconnects"""
         while not self._stop_event.is_set():
@@ -141,16 +151,28 @@ class Server:
                 self._consumer.stop()
                 break
             self._reconnect()
-
+    
     def _reconnect(self):
         """Check if the server shall reconnect itself to the message broker"""
         if self._consumer.may_reconnect:
-            # Stop the currently running consumer
-            self._consumer.stop()
-            # Wait for 10 seconds
-            time.sleep(10)
-            # Create a new consumer
-            self._consumer = _BasicConsumer(
-                self._amqp_dsn, self._exchange_name, self._executor, self._content_validator,
-                self._queue_name, self._exchange_type
-            )
+            if self._current_reconnection_attempts < self._max_reconnection_attempts:
+                _logger.info('Trying to reconnect to the message broker')
+                # Stop the currently running consumer
+                self._consumer.stop()
+                # Wait for 10 seconds
+                _logger.info('Waiting five (5) seconds before opening a new connection to the '
+                             'message broker')
+                time.sleep(5)
+                # Create a new consumer
+                self._consumer = _BasicConsumer(
+                    self._amqp_dsn, self._exchange_name, self._executor, self._content_validator,
+                    self._queue_name, self._exchange_type
+                )
+                self._current_reconnection_attempts += 1
+            else:
+                _logger.critical('Unable to reconnect to the message broker. The maximum amount '
+                                 'of reconnection attempts was reached')
+                self._consumer.may_reconnect = False
+                self._error_risen.set()
+                self._stop_event.set()
+                self._error = _MaxConnectionAttemptsReached()
