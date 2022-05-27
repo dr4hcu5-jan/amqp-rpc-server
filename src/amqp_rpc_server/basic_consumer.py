@@ -78,7 +78,7 @@ class BasicConsumer:
         # Initialize some attributes which are needed later and apply typing to them
         self._connection: Optional[pika.SelectConnection] = None
         self._channel: Optional[pika.channel.Channel] = None
-        self._qos_prefetch_count = 0
+        self._qos_prefetch_count = 1
         self._consumer_tag = None
         self._is_consuming = False
         self._is_closing = False
