@@ -344,7 +344,7 @@ class BasicConsumer:
         self._consumer_tag = self._channel.basic_consume(
             self._queue_name,
             on_message_callback=self._cb_new_message_received,
-            exclusive=True,
+            exclusive=False,
             auto_ack=False
         )
     
