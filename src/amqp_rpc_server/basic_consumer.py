@@ -274,9 +274,9 @@ class BasicConsumer:
         self._channel.queue_declare(
             self._queue_name,
             passive=False,
-            exclusive=True,
-            auto_delete=True,
-            durable=False,
+            exclusive=False,
+            auto_delete=False,
+            durable=True,
             callback=self._cb_queue_declared
         )
     
