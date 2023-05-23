@@ -428,16 +428,15 @@ class BasicConsumer:
         # Now run the executor and get its results and catch all errors happening which are not
         # explicitly caught during the execution
         try:
-            results = self._executor(message_body)
-            # Since the message has been processed it now will be acknowledged
+            # Since the message is valid it now will be acknowledged
             channel.basic_ack(delivery_properties.delivery_tag)
+            results = self._executor(message_body)
         except Exception as error:  # pylint: disable=broad-except
             # Since an error occurred we now put the information from the error into the response
             exception_data = {
                 "error": str(error)
             }
             results = json.dumps(exception_data, ensure_ascii=False).encode('utf-8')
-            channel.basic_reject(delivery_properties.delivery_tag, requeue=False)
         # Send the response to the message broker
         channel.basic_publish(
             exchange='',
